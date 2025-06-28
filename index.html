@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>サンプリングDJセット</title>
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -500,7 +501,6 @@
         <div class="keyboard-section">
             <h2 class="section-title">🎹 サンプリングキーボード（50ボタン）</h2>
             
-            <!-- プリセットサンプルのオンオフ切り替え -->
             <div class="preset-samples">
                 <div class="preset-title">📁 プリセットサンプル（27個）</div>
                 <div class="preset-controls">
@@ -521,7 +521,6 @@
             </div>
             
             <div class="keyboard" id="keyboard">
-                <!-- キーボードはJavaScriptで生成 -->
             </div>
         </div>
         
@@ -539,7 +538,7 @@
                 <li>音楽とサンプルの音量を個別に調整できます</li>
                 <li>録音ボタンで音楽とサンプル音を同時録音できます</li>
                 <li>全停止ボタンで全ての音を停止できます</li>
-                <li>録音した音声は自動でダウンロードされます</li>
+                <li>録音した音声はMP3形式で自動ダウンロードされます（日本時間でファイル名生成）</li>
             </ul>
         </div>
     </div>
@@ -562,7 +561,6 @@
                 this.musicSource = null;
                 this.presetEnabled = false;
                 
-                // 27個のプリセットサンプル
                 this.presetSamples = [
                     './01Laser1.mp3',
                     './2Laser2.mp3',
@@ -593,7 +591,6 @@
                     './27.Hit.mp3'
                 ];
                 
-                // 50個のキーマッピング
                 this.keyMapping = [
                     '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
                     'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
@@ -635,16 +632,13 @@
                 try {
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     
-                    // ゲインノードの作成
                     this.musicGainNode = this.audioContext.createGain();
                     this.sampleGainNode = this.audioContext.createGain();
                     this.destination = this.audioContext.createMediaStreamDestination();
                     
-                    // 初期音量設定
                     this.musicGainNode.gain.value = 0.5;
                     this.sampleGainNode.gain.value = 0.7;
                     
-                    // 接続
                     this.musicGainNode.connect(this.audioContext.destination);
                     this.musicGainNode.connect(this.destination);
                     this.sampleGainNode.connect(this.audioContext.destination);
@@ -656,37 +650,29 @@
             }
             
             bindEvents() {
-                // ファイル選択
                 this.elements.audioFile.addEventListener('change', (e) => this.loadAudioFile(e));
                 this.elements.sampleFiles.addEventListener('change', (e) => this.loadSampleFiles(e));
                 
-                // プリセットトグル
                 this.elements.presetToggle.addEventListener('click', () => this.togglePreset());
                 
-                // プレイヤーコントロール
                 this.elements.playBtn.addEventListener('click', () => this.playAudio());
                 this.elements.pauseBtn.addEventListener('click', () => this.pauseAudio());
                 this.elements.stopBtn.addEventListener('click', () => this.stopAudio());
                 this.elements.recordBtn.addEventListener('click', () => this.toggleRecording());
                 this.elements.stopAllBtn.addEventListener('click', () => this.stopAllSounds());
                 
-                // 音量調整
                 this.elements.musicVolumeSlider.addEventListener('input', (e) => this.updateMusicVolume(e));
                 this.elements.sampleVolumeSlider.addEventListener('input', (e) => this.updateSampleVolume(e));
                 
-                // プログレスバー
                 this.elements.progressBar.addEventListener('click', (e) => this.seekAudio(e));
                 
-                // オーディオイベント
                 this.audioPlayer.addEventListener('loadedmetadata', () => this.updateTotalTime());
                 this.audioPlayer.addEventListener('timeupdate', () => this.updateProgress());
                 this.audioPlayer.addEventListener('ended', () => this.onAudioEnded());
                 
-                // キーボードイベント
                 document.addEventListener('keydown', (e) => this.handleKeyPress(e));
                 document.addEventListener('keyup', (e) => this.handleKeyRelease(e));
                 
-                // ユーザーインタラクション後にオーディオコンテキストを再開
                 document.addEventListener('click', () => {
                     if (this.audioContext && this.audioContext.state === 'suspended') {
                         this.audioContext.resume();
@@ -712,7 +698,6 @@
                 });
             }
             
-            // プリセットのオンオフ切り替え
             async togglePreset() {
                 this.presetEnabled = !this.presetEnabled;
                 
@@ -725,7 +710,6 @@
                 }
             }
             
-            // プリセットサンプル読み込み
             async loadPresetSamples() {
                 this.updateStatus('プリセットサンプルを読み込み中...');
                 
@@ -748,7 +732,6 @@
                             isPreset: true
                         };
                         
-                        // キーボードのラベルを更新
                         const keyElement = document.querySelector(`[data-index="${i}"]`);
                         if (keyElement) {
                             const label = keyElement.querySelector('.key-label');
@@ -759,7 +742,6 @@
                         
                     } catch (error) {
                         console.error(`Sample ${this.presetSamples[i]} loading error:`, error);
-                        // エラーの場合は空のスロットとして扱う
                         const keyElement = document.querySelector(`[data-index="${i}"]`);
                         if (keyElement) {
                             const label = keyElement.querySelector('.key-label');
@@ -771,9 +753,7 @@
                 this.updateStatus(`${loadedCount}個のプリセットサンプルを読み込みました`);
             }
             
-            // プリセットサンプルをクリア
             clearPresetSamples() {
-                // プリセットサンプルのみクリア
                 for (let i = 0; i < this.presetSamples.length; i++) {
                     if (this.samples[i] && this.samples[i].isPreset) {
                         this.samples[i] = null;
@@ -794,7 +774,6 @@
                     const url = URL.createObjectURL(file);
                     this.audioPlayer.src = url;
                     
-                    // オーディオソースを作成
                     if (this.musicSource) {
                         this.musicSource.disconnect();
                     }
@@ -816,15 +795,14 @@
             
             async loadSampleFiles(event) {
                 const files = Array.from(event.target.files);
-                const maxAdditionalSamples = 23; // 残り23個
-                const startIndex = this.presetSamples.length; // 27から開始
+                const maxAdditionalSamples = 23;
+                const startIndex = this.presetSamples.length;
                 
                 if (files.length > maxAdditionalSamples) {
                     alert(`最大${maxAdditionalSamples}個のサンプルファイルまで選択できます。`);
                     return;
                 }
                 
-                // 追加サンプルの領域をクリア
                 for (let i = startIndex; i < 50; i++) {
                     if (this.samples[i] && !this.samples[i].isPreset) {
                         this.samples[i] = null;
@@ -851,7 +829,6 @@
                             isPreset: false
                         };
                         
-                        // キーボードのラベルを更新
                         const keyElement = document.querySelector(`[data-index="${sampleIndex}"]`);
                         if (keyElement) {
                             const label = keyElement.querySelector('.key-label');
@@ -887,20 +864,16 @@
             }
             
             stopAllSounds() {
-                // 音楽停止
                 this.stopAudio();
                 
-                // 全てのサンプル音停止
                 this.playingSamples.forEach(source => {
                     try {
                         source.stop();
                     } catch (error) {
-                        // Already stopped
                     }
                 });
                 this.playingSamples.clear();
                 
-                // 全てのキーの状態をリセット
                 document.querySelectorAll('.key').forEach(key => {
                     key.classList.remove('active', 'playing');
                 });
@@ -915,7 +888,6 @@
                         source.buffer = this.samples[index].buffer;
                         source.connect(this.sampleGainNode);
                         
-                        // 再生終了時の処理
                         source.onended = () => {
                             this.playingSamples.delete(source);
                             this.releaseKey(this.keyMapping[index]);
@@ -963,8 +935,6 @@
             handleKeyRelease(event) {
                 const key = event.key.toLowerCase();
                 if (this.keyMapping.includes(key)) {
-                    // キーリリースでは視覚的な効果のみ
-                    // 音は自然に終了するまで再生継続
                 }
             }
             
@@ -991,7 +961,6 @@
                         throw new Error('Audio context not initialized');
                     }
                     
-                    // MediaRecorderの設定
                     const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
                         ? 'audio/webm;codecs=opus' 
                         : 'audio/webm';
@@ -1036,24 +1005,90 @@
                 this.updateStatus('録音を停止しました');
             }
             
-            saveRecording() {
+            async saveRecording() {
                 if (this.recordedChunks.length > 0) {
                     const blob = new Blob(this.recordedChunks, { 
                         type: this.recordedChunks[0].type || 'audio/webm' 
                     });
-                    const url = URL.createObjectURL(blob);
                     
-                    const a = document.createElement('a');
-                    a.href = url;
-                    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-                    a.download = `sampling_dj_mix_${timestamp}.webm`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    
-                    URL.revokeObjectURL(url);
-                    this.updateStatus('録音ファイルをダウンロードしました！');
+                    await this.convertToMP3(blob);
                 }
+            }
+            
+            async convertToMP3(webmBlob) {
+                try {
+                    this.updateStatus('MP3形式に変換中...');
+                    
+                    const arrayBuffer = await webmBlob.arrayBuffer();
+                    const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                    
+                    const mp3encoder = new lamejs.Mp3Encoder(1, audioBuffer.sampleRate, 128);
+                    
+                    const samples = audioBuffer.getChannelData(0);
+                    const sampleBlockSize = 1152;
+                    const mp3Data = [];
+                    
+                    for (let i = 0; i < samples.length; i += sampleBlockSize) {
+                        const sampleChunk = samples.subarray(i, i + sampleBlockSize);
+                        const mp3buf = mp3encoder.encodeBuffer(this.convertFloat32ToInt16(sampleChunk));
+                        if (mp3buf.length > 0) {
+                            mp3Data.push(mp3buf);
+                        }
+                    }
+                    
+                    const mp3buf = mp3encoder.flush();
+                    if (mp3buf.length > 0) {
+                        mp3Data.push(mp3buf);
+                    }
+                    
+                    const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
+                    this.downloadFile(mp3Blob, 'mp3');
+                    
+                } catch (error) {
+                    console.error('MP3変換エラー:', error);
+                    this.updateStatus('MP3変換に失敗しました。WebM形式でダウンロードします。');
+                    this.downloadFile(webmBlob, 'webm');
+                }
+            }
+            
+            convertFloat32ToInt16(buffer) {
+                const l = buffer.length;
+                const buf = new Int16Array(l);
+                
+                for (let i = 0; i < l; i++) {
+                    buf[i] = Math.min(1, buffer[i]) * 0x7FFF;
+                }
+                return buf;
+            }
+            
+            getJSTTimestamp() {
+                const now = new Date();
+                // 日本時間（JST）に変換（UTC+9時間）
+                const jstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+                
+                // YYYY-MM-DD_HH-mm-ss 形式でフォーマット
+                const year = jstTime.getUTCFullYear();
+                const month = String(jstTime.getUTCMonth() + 1).padStart(2, '0');
+                const day = String(jstTime.getUTCDate()).padStart(2, '0');
+                const hours = String(jstTime.getUTCHours()).padStart(2, '0');
+                const minutes = String(jstTime.getUTCMinutes()).padStart(2, '0');
+                const seconds = String(jstTime.getUTCSeconds()).padStart(2, '0');
+                
+                return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+            }
+            
+            downloadFile(blob, format) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const timestamp = this.getJSTTimestamp();
+                a.download = `sampling_dj_mix_${timestamp}.${format}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                this.updateStatus(`録音ファイル（${format.toUpperCase()}形式）をダウンロードしました！`);
             }
             
             updateMusicVolume(event) {
@@ -1110,7 +1145,6 @@
             }
         }
         
-        // アプリケーション初期化
         document.addEventListener('DOMContentLoaded', () => {
             new SamplingDJ();
         });
